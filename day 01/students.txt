@@ -1,0 +1,224 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <limits>
+
+using namespace std;
+
+// Structure to hold student data
+struct Student {
+    int id;
+    string name;
+    string course;
+};
+
+// File used for persistent storage
+const string FILE_NAME = "students.txt";
+
+// Function prototypes
+void displayMenu();
+void addStudent();
+void displayAllStudents();
+void updateStudent();
+void deleteStudent();
+void clearInputBuffer();
+
+int main() {
+    int choice;
+    
+    // Main menu loop
+    do {
+        displayMenu();
+        if (!(cin >> choice)) {
+            clearInputBuffer();
+            cout << "Invalid input. Please enter a number.\n";
+            continue;
+        }
+
+        switch (choice) {
+            case 1: addStudent(); break;
+            case 2: displayAllStudents(); break;
+            case 3: updateStudent(); break;
+            case 4: deleteStudent(); break;
+            case 5: cout << "Exiting system. Goodbye!\n"; break;
+            default: cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 5);
+
+    return 0;
+}
+
+// Displays the main console menu
+void displayMenu() {
+    cout << "\n===============================\n";
+    cout << "   Student Management System   \n";
+    cout << "===============================\n";
+    cout << "1. Add Student\n";
+    cout << "2. Display All Students\n";
+    cout << "3. Update Student\n";
+    cout << "4. Delete Student\n";
+    cout << "5. Exit\n";
+    cout << "Enter your choice: ";
+}
+
+// Clears the input buffer to prevent issues when mixing cin >> and getline
+void clearInputBuffer() {
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+// 1. Adds a student and appends them to the file
+void addStudent() {
+    ofstream outFile(FILE_NAME, ios::app);
+    if (!outFile) {
+        cout << "Error opening file for writing.\n";
+        return;
+    }
+
+    Student s;
+    cout << "Enter Student ID: ";
+    cin >> s.id;
+    clearInputBuffer();
+
+    cout << "Enter Student Name: ";
+    getline(cin, s.name);
+
+    cout << "Enter Course: ";
+    getline(cin, s.course);
+
+    // Save as comma-separated values (CSV) format for easy parsing later
+    outFile << s.id << "," << s.name << "," << s.course << "\n";
+    outFile.close();
+
+    cout << "Student added successfully!\n";
+}
+
+// 2. Reads the file and displays all records
+void displayAllStudents() {
+    ifstream inFile(FILE_NAME);
+    if (!inFile || inFile.peek() == ifstream::traits_type::eof()) {
+        cout << "No student records found.\n";
+        return;
+    }
+
+    cout << "\n--- Student Records ---\n";
+    string line;
+    
+    while (getline(inFile, line)) {
+        size_t pos1 = line.find(',');
+        size_t pos2 = line.find(',', pos1 + 1);
+
+        // Parse the CSV line
+        if (pos1 != string::npos && pos2 != string::npos) {
+            string id = line.substr(0, pos1);
+            string name = line.substr(pos1 + 1, pos2 - pos1 - 1);
+            string course = line.substr(pos2 + 1);
+
+            cout << "ID: " << id << " | Name: " << name << " | Course: " << course << "\n";
+        }
+    }
+    inFile.close();
+    cout << "-----------------------\n";
+}
+
+// 3. Updates a specific student's record by ID
+void updateStudent() {
+    ifstream inFile(FILE_NAME);
+    if (!inFile) {
+        cout << "No student records found.\n";
+        return;
+    }
+
+    int targetId;
+    cout << "Enter Student ID to update: ";
+    cin >> targetId;
+    clearInputBuffer();
+
+    vector<string> records;
+    string line;
+    bool found = false;
+
+    // Read all records, update the target, and store in a vector
+    while (getline(inFile, line)) {
+        size_t pos1 = line.find(',');
+        if (pos1 != string::npos) {
+            int currentId = stoi(line.substr(0, pos1));
+            
+            if (currentId == targetId) {
+                found = true;
+                Student s;
+                s.id = currentId;
+                
+                cout << "Enter New Name: ";
+                getline(cin, s.name);
+                cout << "Enter New Course: ";
+                getline(cin, s.course);
+                
+                // Add the updated record to the vector
+                records.push_back(to_string(s.id) + "," + s.name + "," + s.course);
+            } else {
+                // Add the unchanged record to the vector
+                records.push_back(line);
+            }
+        }
+    }
+    inFile.close();
+
+    // If found, rewrite the file with the updated vector data
+    if (found) {
+        ofstream outFile(FILE_NAME, ios::trunc); // trunc overwrites the old file
+        for (const string& record : records) {
+            outFile << record << "\n";
+        }
+        outFile.close();
+        cout << "Student record updated successfully.\n";
+    } else {
+        cout << "Student ID not found.\n";
+    }
+}
+
+// 4. Deletes a student's record by ID
+void deleteStudent() {
+    ifstream inFile(FILE_NAME);
+    if (!inFile) {
+        cout << "No student records found.\n";
+        return;
+    }
+
+    int targetId;
+    cout << "Enter Student ID to delete: ";
+    cin >> targetId;
+    clearInputBuffer();
+
+    vector<string> records;
+    string line;
+    bool found = false;
+
+    // Read all records, skip the target, and store the rest in a vector
+    while (getline(inFile, line)) {
+        size_t pos1 = line.find(',');
+        if (pos1 != string::npos) {
+            int currentId = stoi(line.substr(0, pos1));
+            
+            if (currentId == targetId) {
+                found = true; // Skip adding this to the vector
+            } else {
+                records.push_back(line);
+            }
+        }
+    }
+    inFile.close();
+
+    // If found, rewrite the file without the deleted record
+    if (found) {
+        ofstream outFile(FILE_NAME, ios::trunc);
+        for (const string& record : records) {
+            outFile << record << "\n";
+        }
+        outFile.close();
+        cout << "Student record deleted successfully.\n";
+    } else {
+        cout << "Student ID not found.\n";
+    }
+}
