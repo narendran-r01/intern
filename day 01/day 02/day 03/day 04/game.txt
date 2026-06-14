@@ -1,0 +1,131 @@
+#include <iostream>
+
+using namespace std;
+
+// Global 2D array to represent the 3x3 game board
+char board[3][3];
+char currentPlayer;
+
+// Function to initialize or reset the board with numbers 1-9
+void initializeBoard() {
+    char start = '1';
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            board[i][j] = start++;
+        }
+    }
+    currentPlayer = 'X'; // X always starts
+}
+
+// Function to dynamically display the game board
+void drawBoard() {
+    cout << "\n--- TIC TAC TOE ---\n\n";
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            cout << " " << board[i][j] << " ";
+            if (j < 2) cout << "|"; // Column separators
+        }
+        cout << "\n";
+        if (i < 2) cout << "---|---|---\n"; // Row separators
+    }
+    cout << "\n";
+}
+
+// Function to check for a win condition
+bool checkWin() {
+    // Check rows and columns
+    for (int i = 0; i < 3; i++) {
+        if (board[i][0] == board[i][1] && board[i][1] == board[i][2]) return true; // Row match
+        if (board[0][i] == board[1][i] && board[1][i] == board[2][i]) return true; // Column match
+    }
+    // Check diagonals
+    if (board[0][0] == board[1][1] && board[1][1] == board[2][2]) return true;
+    if (board[0][2] == board[1][1] && board[1][1] == board[2][0]) return true;
+    
+    return false;
+}
+
+// Function to check if the board is full (resulting in a draw)
+bool checkDraw() {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            // If there's still a number (not X or O), the game isn't a draw yet
+            if (board[i][j] != 'X' && board[i][j] != 'O') {
+                return false; 
+            }
+        }
+    }
+    return true;
+}
+
+// Function to switch the active player
+void switchPlayer() {
+    currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
+}
+
+// Main logic for a single round of the game
+void playGame() {
+    initializeBoard();
+    bool gameWon = false;
+    bool gameDraw = false;
+
+    // Main game loop
+    while (!gameWon && !gameDraw) {
+        drawBoard();
+        int choice;
+        
+        cout << "Player " << currentPlayer << ", enter a number (1-9): ";
+        cin >> choice;
+
+        // Input validation: Check if input is within range
+        if (choice < 1 || choice > 9) {
+            cout << "Invalid move! Please select a number between 1 and 9.\n";
+            continue;
+        }
+
+        // Convert the 1-9 choice into 2D array indices (row and column)
+        int row = (choice - 1) / 3;
+        int col = (choice - 1) % 3;
+
+        // Check if the spot is already taken
+        if (board[row][col] == 'X' || board[row][col] == 'O') {
+            cout << "Spot already taken! Try a different move.\n";
+            continue;
+        }
+
+        // Place the player's mark on the board
+        board[row][col] = currentPlayer;
+
+        // Check game status
+        gameWon = checkWin();
+        if (!gameWon) {
+            gameDraw = checkDraw();
+            if (!gameDraw) {
+                switchPlayer(); // Only switch turns if the game is still active
+            }
+        }
+    }
+
+    // End of game sequence
+    drawBoard();
+    if (gameWon) {
+        cout << "*** Congratulations! Player " << currentPlayer << " wins! ***\n\n";
+    } else {
+        cout << "*** It's a draw! ***\n\n";
+    }
+}
+
+int main() {
+    char playAgain;
+    
+    // Outer loop to handle the "Replay" requirement
+    do {
+        playGame();
+        
+        cout << "Would you like to play again? (y/n): ";
+        cin >> playAgain;
+    } while (playAgain == 'y' || playAgain == 'Y');
+
+    cout << "Thanks for playing! Goodbye.\n";
+    return 0;
+}
